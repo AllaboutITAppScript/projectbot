@@ -1,0 +1,546 @@
+
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจองเสื้อ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            background-color: #f0f9ff;
+            font-family: 'Prompt', sans-serif;
+        }
+        .form-container {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(0, 0, 0, 0.1);
+        }
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            border: 2px solid transparent;
+        }
+        .color-option.selected {
+            transform: scale(1.1);
+            border: 2px solid #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+        .color-option.selected::after {
+            content: "✓";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-shadow: 0 0 2px rgba(0, 0, 0, 0.7);
+            font-weight: bold;
+        }
+        .site-option {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        .site-option.selected {
+            border-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.1);
+            transform: translateY(-2px);
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen py-8 px-4">
+    <div class="max-w-4xl mx-auto">
+        <div class="form-container rounded-xl p-6 md:p-8">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">ระบบจองเสื้อ</h1>
+                <p class="text-gray-600">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อทำการจองเสื้อ</p>
+            </div>
+
+            <form id="tshirtForm" class="space-y-6">
+                <!-- ข้อมูลส่วนตัว -->
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h2 class="text-xl font-semibold text-blue-800 mb-4">ข้อมูลส่วนตัว</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
+                            <input type="text" id="fullName" name="fullName" required class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none">
+                        </div>
+                        <div>
+                            <label for="phoneNumber" class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์ <span class="text-red-500">*</span></label>
+                            <input type="tel" id="phoneNumber" name="phoneNumber" required class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none">
+                        </div>
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">อีเมล <span class="text-red-500">*</span></label>
+                            <input type="email" id="email" name="email" required class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- รายละเอียดเสื้อ -->
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h2 class="text-xl font-semibold text-blue-800 mb-4">รายละเอียดเสื้อ</h2>
+                    
+                    <!-- ขนาดเสื้อ -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ขนาดเสื้อ <span class="text-red-500">*</span></label>
+                        <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
+                            <div class="size-option p-2 border border-gray-300 rounded-lg text-center cursor-pointer hover:bg-blue-100" data-size="S">
+                                <span class="text-lg font-medium">S</span>
+                            </div>
+                            <div class="size-option p-2 border border-gray-300 rounded-lg text-center cursor-pointer hover:bg-blue-100" data-size="M">
+                                <span class="text-lg font-medium">M</span>
+                            </div>
+                            <div class="size-option p-2 border border-gray-300 rounded-lg text-center cursor-pointer hover:bg-blue-100" data-size="L">
+                                <span class="text-lg font-medium">L</span>
+                            </div>
+                            <div class="size-option p-2 border border-gray-300 rounded-lg text-center cursor-pointer hover:bg-blue-100" data-size="XL">
+                                <span class="text-lg font-medium">XL</span>
+                            </div>
+                            <div class="size-option p-2 border border-gray-300 rounded-lg text-center cursor-pointer hover:bg-blue-100" data-size="2XL">
+                                <span class="text-lg font-medium">2XL</span>
+                            </div>
+                            <div class="size-option p-2 border border-gray-300 rounded-lg text-center cursor-pointer hover:bg-blue-100" data-size="3XL">
+                                <span class="text-lg font-medium">3XL</span>
+                            </div>
+                        </div>
+                        <input type="hidden" id="shirtSize" name="shirtSize" required>
+                    </div>
+                    
+                    <!-- สีเสื้อ -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">สีเสื้อ <span class="text-red-500">*</span></label>
+                        <div class="flex flex-wrap gap-3">
+                            <div class="color-option" style="background-color: #FFFFFF; border: 1px solid #E5E7EB;" data-color="ขาว" title="ขาว"></div>
+                            <div class="color-option" style="background-color: #000000;" data-color="ดำ" title="ดำ"></div>
+                            <div class="color-option" style="background-color: #EF4444;" data-color="แดง" title="แดง"></div>
+                            <div class="color-option" style="background-color: #1D4ED8;" data-color="น้ำเงิน" title="น้ำเงิน"></div>
+                            <div class="color-option" style="background-color: #10B981;" data-color="เขียว" title="เขียว"></div>
+                            <div class="color-option" style="background-color: #F59E0B;" data-color="ส้ม" title="ส้ม"></div>
+                            <div class="color-option" style="background-color: #8B5CF6;" data-color="ม่วง" title="ม่วง"></div>
+                            <div class="color-option" style="background-color: #EC4899;" data-color="ชมพู" title="ชมพู"></div>
+                        </div>
+                        <input type="hidden" id="shirtColor" name="shirtColor" required>
+                    </div>
+                    
+                    <!-- ประเภทเสื้อ -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ประเภทเสื้อ <span class="text-red-500">*</span></label>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div class="site-option p-3 border border-gray-300 rounded-lg" data-type="คอกลม">
+                                <div class="flex flex-col items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M6,4 C6,4 8,2 12,2 C16,2 18,4 18,4 L20,8 L18,10 L18,20 L6,20 L6,10 L4,8 L6,4 Z"></path>
+                                        <path d="M12,4 C12,4 10,6 10,8"></path>
+                                        <path d="M12,4 C12,4 14,6 14,8"></path>
+                                    </svg>
+                                    <span class="font-medium">คอกลม</span>
+                                </div>
+                            </div>
+                            <div class="site-option p-3 border border-gray-300 rounded-lg" data-type="คอวี">
+                                <div class="flex flex-col items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M6,4 C6,4 8,2 12,2 C16,2 18,4 18,4 L20,8 L18,10 L18,20 L6,20 L6,10 L4,8 L6,4 Z"></path>
+                                        <path d="M9,4 L12,8 L15,4"></path>
+                                    </svg>
+                                    <span class="font-medium">คอวี</span>
+                                </div>
+                            </div>
+                            <div class="site-option p-3 border border-gray-300 rounded-lg" data-type="คอปก">
+                                <div class="flex flex-col items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M6,4 C6,4 8,2 12,2 C16,2 18,4 18,4 L20,8 L18,10 L18,20 L6,20 L6,10 L4,8 L6,4 Z"></path>
+                                        <path d="M8,4 L8,8 L12,6 L16,8 L16,4"></path>
+                                    </svg>
+                                    <span class="font-medium">คอปก</span>
+                                </div>
+                            </div>
+                            <div class="site-option p-3 border border-gray-300 rounded-lg" data-type="แขนยาว">
+                                <div class="flex flex-col items-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M6,4 C6,4 8,2 12,2 C16,2 18,4 18,4 L20,8 L22,16 L20,16 L18,10 L18,20 L6,20 L6,10 L4,16 L2,16 L4,8 L6,4 Z"></path>
+                                        <path d="M12,4 C12,4 10,6 10,8"></path>
+                                        <path d="M12,4 C12,4 14,6 14,8"></path>
+                                    </svg>
+                                    <span class="font-medium">แขนยาว</span>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="shirtType" name="shirtType" required>
+                    </div>
+                    
+                    <!-- จำนวนและข้อความ -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">จำนวน <span class="text-red-500">*</span></label>
+                            <div class="flex items-center">
+                                <button type="button" id="decreaseQuantity" class="bg-gray-200 px-3 py-2 rounded-l-lg hover:bg-gray-300">-</button>
+                                <input type="number" id="quantity" name="quantity" min="1" value="1" required class="input-field text-center w-20 py-2 border-y border-gray-300 focus:outline-none">
+                                <button type="button" id="increaseQuantity" class="bg-gray-200 px-3 py-2 rounded-r-lg hover:bg-gray-300">+</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="customText" class="block text-sm font-medium text-gray-700 mb-1">ข้อความที่ต้องการสกรีน</label>
+                            <textarea id="customText" name="customText" rows="2" class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- สถานที่รับสินค้า -->
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h2 class="text-xl font-semibold text-blue-800 mb-4">สถานที่รับสินค้า</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="site-option p-4 border border-gray-300 rounded-lg" data-receive="รับที่ร้าน">
+                            <div class="flex items-center">
+                                <div class="bg-blue-100 p-3 rounded-full mr-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-gray-800">รับที่ร้าน</h3>
+                                    <p class="text-sm text-gray-600">รับสินค้าได้ที่ร้านของเรา</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="site-option p-4 border border-gray-300 rounded-lg" data-receive="จัดส่ง">
+                            <div class="flex items-center">
+                                <div class="bg-blue-100 p-3 rounded-full mr-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-gray-800">จัดส่ง</h3>
+                                    <p class="text-sm text-gray-600">จัดส่งถึงบ้านคุณ</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="receiveMethod" name="receiveMethod" required>
+                    
+                    <div id="shippingAddressContainer" class="hidden mt-4">
+                        <label for="shippingAddress" class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่จัดส่ง <span class="text-red-500">*</span></label>
+                        <textarea id="shippingAddress" name="shippingAddress" rows="3" class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none"></textarea>
+                    </div>
+                </div>
+
+                <!-- การชำระเงิน -->
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h2 class="text-xl font-semibold text-blue-800 mb-4">การชำระเงิน</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="site-option p-4 border border-gray-300 rounded-lg" data-payment="ชำระแล้ว">
+                            <div class="flex items-center">
+                                <div class="bg-green-100 p-3 rounded-full mr-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-gray-800">ชำระแล้ว</h3>
+                                    <p class="text-sm text-gray-600">ฉันได้ชำระเงินแล้ว</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="site-option p-4 border border-gray-300 rounded-lg" data-payment="ยังไม่ชำระ">
+                            <div class="flex items-center">
+                                <div class="bg-yellow-100 p-3 rounded-full mr-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-gray-800">ยังไม่ชำระ</h3>
+                                    <p class="text-sm text-gray-600">ฉันจะชำระเงินภายหลัง</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="paymentStatus" name="paymentStatus" required>
+                    
+                    <div id="slipContainer" class="hidden mt-4">
+                        <label for="slipURL" class="block text-sm font-medium text-gray-700 mb-1">URL สลิปการโอนเงิน <span class="text-red-500">*</span></label>
+                        <input type="url" id="slipURL" name="slipURL" class="input-field w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none" placeholder="https://example.com/slip.jpg">
+                        <p class="text-sm text-gray-500 mt-1">กรุณาอัพโหลดสลิปไปยังบริการฝากรูปและวางลิงก์ที่นี่</p>
+                    </div>
+                </div>
+
+                <div class="text-center pt-4">
+                    <button type="submit" class="btn-primary text-white font-medium py-3 px-8 rounded-lg text-lg">ส่งข้อมูลการจอง</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // ขนาดเสื้อ
+            const sizeOptions = document.querySelectorAll('.size-option');
+            const sizeInput = document.getElementById('shirtSize');
+            
+            sizeOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    sizeOptions.forEach(opt => opt.classList.remove('bg-blue-500', 'text-white'));
+                    this.classList.add('bg-blue-500', 'text-white');
+                    sizeInput.value = this.getAttribute('data-size');
+                });
+            });
+            
+            // สีเสื้อ
+            const colorOptions = document.querySelectorAll('.color-option');
+            const colorInput = document.getElementById('shirtColor');
+            
+            colorOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    colorOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    colorInput.value = this.getAttribute('data-color');
+                });
+            });
+            
+            // ประเภทเสื้อ
+            const typeOptions = document.querySelectorAll('[data-type]');
+            const typeInput = document.getElementById('shirtType');
+            
+            typeOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    typeOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    typeInput.value = this.getAttribute('data-type');
+                });
+            });
+            
+            // วิธีการรับสินค้า
+            const receiveOptions = document.querySelectorAll('[data-receive]');
+            const receiveInput = document.getElementById('receiveMethod');
+            const shippingAddressContainer = document.getElementById('shippingAddressContainer');
+            const shippingAddressField = document.getElementById('shippingAddress');
+            
+            receiveOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    receiveOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    const receiveMethod = this.getAttribute('data-receive');
+                    receiveInput.value = receiveMethod;
+                    
+                    if (receiveMethod === 'จัดส่ง') {
+                        shippingAddressContainer.classList.remove('hidden');
+                        shippingAddressField.setAttribute('required', 'required');
+                    } else {
+                        shippingAddressContainer.classList.add('hidden');
+                        shippingAddressField.removeAttribute('required');
+                    }
+                });
+            });
+            
+            // สถานะการชำระเงิน
+            const paymentOptions = document.querySelectorAll('[data-payment]');
+            const paymentInput = document.getElementById('paymentStatus');
+            const slipContainer = document.getElementById('slipContainer');
+            const slipURLField = document.getElementById('slipURL');
+            
+            paymentOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    paymentOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    const paymentStatus = this.getAttribute('data-payment');
+                    paymentInput.value = paymentStatus;
+                    
+                    if (paymentStatus === 'ชำระแล้ว') {
+                        slipContainer.classList.remove('hidden');
+                        slipURLField.setAttribute('required', 'required');
+                    } else {
+                        slipContainer.classList.add('hidden');
+                        slipURLField.removeAttribute('required');
+                    }
+                });
+            });
+            
+            // เพิ่ม/ลดจำนวน
+            const decreaseBtn = document.getElementById('decreaseQuantity');
+            const increaseBtn = document.getElementById('increaseQuantity');
+            const quantityInput = document.getElementById('quantity');
+            
+            decreaseBtn.addEventListener('click', function() {
+                const currentValue = parseInt(quantityInput.value);
+                if (currentValue > 1) {
+                    quantityInput.value = currentValue - 1;
+                }
+            });
+            
+            increaseBtn.addEventListener('click', function() {
+                const currentValue = parseInt(quantityInput.value);
+                quantityInput.value = currentValue + 1;
+            });
+
+            // การส่งฟอร์ม
+            const form = document.getElementById('tshirtForm');
+            
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // ตรวจสอบว่าเลือกตัวเลือกที่จำเป็นครบหรือไม่
+                if (!sizeInput.value) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'กรุณาเลือกขนาดเสื้อ',
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: '#3085d6'
+                    });
+                    return;
+                }
+                
+                if (!colorInput.value) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'กรุณาเลือกสีเสื้อ',
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: '#3085d6'
+                    });
+                    return;
+                }
+                
+                if (!typeInput.value) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'กรุณาเลือกประเภทเสื้อ',
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: '#3085d6'
+                    });
+                    return;
+                }
+                
+                if (!receiveInput.value) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'กรุณาเลือกวิธีการรับสินค้า',
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: '#3085d6'
+                    });
+                    return;
+                }
+                
+                if (!paymentInput.value) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'กรุณาเลือกสถานะการชำระเงิน',
+                        confirmButtonText: 'ตกลง',
+                        confirmButtonColor: '#3085d6'
+                    });
+                    return;
+                }
+                
+                // แสดง SweetAlert ขณะรอการบันทึก
+                Swal.fire({
+                    title: 'กำลังบันทึกข้อมูล',
+                    text: 'กรุณารอสักครู่...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // เก็บข้อมูลจากฟอร์ม
+                const formData = new FormData(form);
+                const data = {};
+                formData.forEach((value, key) => {
+                    data[key] = value;
+                });
+                
+                // เพิ่มข้อมูลเพิ่มเติม
+                data.bookingDate = new Date().toISOString();
+                data.orderStatus = 'รอดำเนินการ';
+                
+                // แปลงข้อมูลเป็น JSON string
+                const jsonData = JSON.stringify(data);
+                
+                // สร้าง callback function สำหรับ JSONP
+                const callbackName = 'jsonpCallback_' + new Date().getTime();
+                window[callbackName] = function(response) {
+                    // ลบ script element
+                    document.body.removeChild(script);
+                    
+                    // ลบ callback function
+                    delete window[callbackName];
+                    
+                    // แสดงผลลัพธ์
+                    if (response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'บันทึกข้อมูลสำเร็จ',
+                            text: 'หมายเลขการจอง: ' + response.bookingId,
+                            confirmButtonText: 'ตกลง',
+                            confirmButtonColor: '#3085d6'
+                        }).then(() => {
+                            form.reset();
+                            // รีเซ็ตสถานะการเลือกทั้งหมด
+                            sizeOptions.forEach(opt => opt.classList.remove('bg-blue-500', 'text-white'));
+                            colorOptions.forEach(opt => opt.classList.remove('selected'));
+                            typeOptions.forEach(opt => opt.classList.remove('selected'));
+                            receiveOptions.forEach(opt => opt.classList.remove('selected'));
+                            paymentOptions.forEach(opt => opt.classList.remove('selected'));
+                            shippingAddressContainer.classList.add('hidden');
+                            slipContainer.classList.add('hidden');
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'เกิดข้อผิดพลาด',
+                            text: response.message || 'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+                            confirmButtonText: 'ตกลง',
+                            confirmButtonColor: '#3085d6'
+                        });
+                    }
+                };
+                
+                // สร้าง URL สำหรับ JSONP request
+                const scriptURL = `https://script.google.com/macros/s/AKfycbzMoZFWRgH4RRPIuxzEb-nx3TfKAct_m7UtmuC8uhMq8bZxlwsERh_DvcPf7HnzGrh-sQ/exec?data=${encodeURIComponent(jsonData)}&callback=${callbackName}`;
+                
+                // สร้าง script element และเพิ่มเข้าไปใน DOM
+                const script = document.createElement('script');
+                script.src = scriptURL;
+                document.body.appendChild(script);
+                
+                // จัดการกรณี timeout
+                setTimeout(() => {
+                    if (window[callbackName]) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'การเชื่อมต่อล้มเหลว',
+                            text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง',
+                            confirmButtonText: 'ตกลง',
+                            confirmButtonColor: '#3085d6'
+                        });
+                        
+                        // ลบ script element
+                        if (document.body.contains(script)) {
+                            document.body.removeChild(script);
+                        }
+                        
+                        // ลบ callback function
+                        delete window[callbackName];
+                    }
+                }, 30000); // timeout หลังจาก 30 วินาที
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'950f0891129a1d2f',t:'MTc1MDEyNjQ2Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
