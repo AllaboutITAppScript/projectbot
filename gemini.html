@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LINE LIFF Bot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.20.15/babel.min.js"></script>
+</head>
+<body>
+  <div id="root" class="min-h-screen bg-gray-100"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function App() {
+      const [isInitialized, setIsInitialized] = useState(false);
+      const [userId, setUserId] = useState(null);
+      const [message, setMessage] = useState('');
+      const [file, setFile] = useState(null);
+      const [response, setResponse] = useState('');
+      const [isLoading, setIsLoading] = useState(false);
+      const [error, setError] = useState('');
+
+      // Initialize LIFF
+      useEffect(() => {
+        async function initializeLiff() {
+          try {
+            await liff.init({ liffId: 'YOUR_LIFF_ID_HERE' }); // Replace with your LIFF ID
+            if (!liff.isLoggedIn()) {
+              liff.login();
+            } else {
+              const profile = await liff.getProfile();
+              setUserId(profile.userId);
+              setIsInitialized(true);
+            }
+          } catch (err) {
+            setError('Failed to initialize LIFF: ' + err.message);
+          }
+        }
+        initializeLiff();
+      }, []);
+
+      // Handle message submission
+      const handleSendMessage = async (e) => {
+        e.preventDefault();
+        if (!message && !file) return;
+
+        setIsLoading(true);
+        setError('');
+        setResponse('');
+
+        try {
+          const formData = new FormData();
+          formData.append('userId', userId);
+          if (message) formData.append('text', message);
+          if (file) formData.append('file', file);
+
+          const response = await fetch('https://script.google.com/macros/s/AKfycby3jdV8UB1V0SH4kiNqe6daAWeDqdt3A0aogWPOBqUhlB53ln5hTlmtp44KB9CQqmXxnA/exec', { // Replace with your Google Apps Script web app URL
+            method: 'POST',
+            body: formData,
+          });
+
+          const result = await response.json();
+          if (result.status === 'success') {
+            setResponse(result.message);
+          } else {
+            setError(result.message || 'Failed to process request');
+          }
+        } catch (err) {
+          setError('Error: ' + err.message);
+        } finally {
+          setIsLoading(false);
+          setMessage('');
+          setFile(null);
+        }
+      };
+
+      if (!isInitialized) {
+        return <div class="flex justify-center items-center min-h-screen">Initializing...</div>;
+      }
+
+      return (
+        <div class="container mx-auto p-4">
+          <h1 class="text-2xl font-bold mb-4 text-center">LINE Bot</h1>
+          {error && <div class="bg-red-100 text-red-700 p-3 mb-4 rounded">{error}</div>}
+          {response && <div class="bg-green-100 text-green-700 p-3 mb-4 rounded">{response}</div>}
+          <form onSubmit={handleSendMessage} class="space-y-4">
+            <div>
+              <textarea
+                class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows="4"
+                placeholder="Enter your message or URL..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              ></textarea>
+            </div>
+            <div>
+              <input
+                type="file"
+                accept="image/*,video/*,audio/*"
+                class="w-full p-2 border rounded"
+                onChange={(e) => setFile(e.target.files[0])}
+              />
+            </div>
+            <button
+              type="submit"
+              class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+              disabled={isLoading || (!message && !file)}
+            >
+              {isLoading ? 'Processing...' : 'Send'}
+            </button>
+          </form>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
