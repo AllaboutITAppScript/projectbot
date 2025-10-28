@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chatbot - Line LIFF</title>
+    <title>Line Bot Chat - Customer Service</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -21,6 +21,11 @@
             background-color: #f1f5f9;
             color: #334155;
             border-radius: 18px 18px 18px 4px;
+        }
+        .agent-message {
+            background-color: #10b981;
+            color: white;
+            border-radius: 18px 18px 4px 18px;
         }
         .typing-indicator {
             display: inline-block;
@@ -50,13 +55,6 @@
         }
         .quick-reply:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        .chat-history-item {
-            transition: all 0.2s ease;
-        }
-        .chat-history-item:hover {
-            background-color: #f8fafc;
         }
         .fade-in {
             animation: fadeIn 0.3s ease-in-out;
@@ -65,6 +63,16 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .status-online { background-color: #10b981; }
+        .status-offline { background-color: #ef4444; }
+        .status-away { background-color: #f59e0b; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
@@ -73,57 +81,55 @@
         <header class="bg-white shadow-sm py-4 px-6 flex items-center justify-between rounded-b-2xl">
             <div class="flex items-center">
                 <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                    AI
+                    <i class="fab fa-line"></i>
                 </div>
                 <div class="ml-3">
-                    <h1 class="font-bold text-gray-800">AI Assistant</h1>
-                    <p class="text-xs text-green-500 flex items-center">
-                        <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
-                        พร้อมให้บริการ
+                    <h1 class="font-bold text-gray-800">Customer Service</h1>
+                    <p class="text-xs flex items-center">
+                        <span class="status-indicator status-online"></span>
+                        <span id="connectionStatus" class="text-green-500">กำลังเชื่อมต่อกับบอท</span>
                     </p>
                 </div>
             </div>
-            <button id="menuBtn" class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-ellipsis-v"></i>
-            </button>
+            <div class="flex space-x-2">
+                <button id="refreshBtn" class="text-gray-500 hover:text-blue-500 p-2" title="รีเฟรชการสนทนา">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button id="menuBtn" class="text-gray-500 hover:text-gray-700 p-2">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+            </div>
         </header>
+
+        <!-- Connection Info Banner -->
+        <div id="connectionBanner" class="bg-blue-50 border border-blue-200 mx-4 mt-2 p-3 rounded-lg flex items-center justify-between">
+            <div class="flex items-center">
+                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                <span class="text-sm text-blue-700">กำลังดึงข้อมูลการสนทนาจาก Line Bot</span>
+            </div>
+            <button id="closeBanner" class="text-blue-500 hover:text-blue-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
 
         <!-- Chat Container -->
         <div id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
-            <!-- Welcome Message -->
-            <div class="flex justify-start">
-                <div class="message-bubble bot-message p-4 shadow-sm">
-                    <p class="font-medium">สวัสดีค่ะ! ฉันคือผู้ช่วย AI</p>
-                    <p class="mt-2">ฉันสามารถช่วยเหลือคุณในเรื่องต่างๆ เช่น:</p>
-                    <ul class="mt-2 ml-4 list-disc text-sm space-y-1">
-                        <li>ตอบคำถามทั่วไป</li>
-                        <li>ช่วยค้นหาข้อมูล</li>
-                        <li>ให้คำแนะนำต่างๆ</li>
-                        <li>และอื่นๆ อีกมากมาย!</li>
-                    </ul>
-                    <p class="mt-3 text-sm">ลองพิมพ์คำถามหรือเลือกคำถามด้านล่างดูสิ</p>
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" class="flex justify-center items-center py-8">
+                <div class="text-center">
+                    <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-2"></div>
+                    <p class="text-gray-500 text-sm">กำลังโหลดประวัติการสนทนา...</p>
                 </div>
             </div>
 
-            <!-- Quick Reply Buttons -->
-            <div class="flex flex-wrap gap-2 justify-start">
-                <button class="quick-reply bg-white border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                    แนะนำตัวหน่อย
-                </button>
-                <button class="quick-reply bg-white border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                    วันนี้อากาศเป็นอย่างไร
-                </button>
-                <button class="quick-reply bg-white border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                    มีเมนูอาหารแนะนำไหม
-                </button>
-            </div>
+            <!-- Messages will be loaded here -->
         </div>
 
         <!-- Input Area -->
         <div class="bg-white p-4 border-t border-gray-200">
             <div class="flex items-center">
-                <button class="text-gray-500 hover:text-gray-700 p-2">
-                    <i class="fas fa-plus-circle"></i>
+                <button id="attachBtn" class="text-gray-500 hover:text-gray-700 p-2">
+                    <i class="fas fa-paperclip"></i>
                 </button>
                 <div class="flex-1 mx-2">
                     <input 
@@ -137,9 +143,19 @@
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
-            <p class="text-xs text-center text-gray-500 mt-2">
-                กด Enter เพื่อส่งข้อความ
-            </p>
+            
+            <!-- Quick Reply Buttons -->
+            <div id="quickReplies" class="flex flex-wrap gap-2 justify-start mt-3">
+                <button class="quick-reply bg-white border border-blue-200 rounded-full px-4 py-2 text-sm text-blue-700 hover:bg-blue-50">
+                    สอบถามสินค้า
+                </button>
+                <button class="quick-reply bg-white border border-blue-200 rounded-full px-4 py-2 text-sm text-blue-700 hover:bg-blue-50">
+                    ติดตามออร์เดอร์
+                </button>
+                <button class="quick-reply bg-white border border-blue-200 rounded-full px-4 py-2 text-sm text-blue-700 hover:bg-blue-50">
+                    ปัญหาการใช้งาน
+                </button>
+            </div>
         </div>
     </div>
 
@@ -152,13 +168,13 @@
                     <i class="fas fa-history text-gray-500 mr-3"></i>
                     <span>ประวัติการสนทนา</span>
                 </button>
-                <button class="w-full text-left p-3 rounded-lg hover:bg-gray-100 flex items-center">
+                <button id="settingsBtn" class="w-full text-left p-3 rounded-lg hover:bg-gray-100 flex items-center">
                     <i class="fas fa-cog text-gray-500 mr-3"></i>
-                    <span>การตั้งค่า</span>
+                    <span>การตั้งค่าบอท</span>
                 </button>
-                <button class="w-full text-left p-3 rounded-lg hover:bg-gray-100 flex items-center">
-                    <i class="fas fa-info-circle text-gray-500 mr-3"></i>
-                    <span>เกี่ยวกับ</span>
+                <button id="helpBtn" class="w-full text-left p-3 rounded-lg hover:bg-gray-100 flex items-center">
+                    <i class="fas fa-question-circle text-gray-500 mr-3"></i>
+                    <span>ความช่วยเหลือ</span>
                 </button>
                 <button id="closeMenu" class="w-full text-left p-3 rounded-lg hover:bg-gray-100 flex items-center text-red-500">
                     <i class="fas fa-times mr-3"></i>
@@ -168,57 +184,39 @@
         </div>
     </div>
 
-    <!-- History Modal -->
-    <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
         <div class="bg-white rounded-2xl w-11/12 max-w-md mx-4 max-h-[80vh] flex flex-col">
             <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h2 class="text-xl font-bold text-gray-800">ประวัติการสนทนา</h2>
-                <button id="closeHistory" class="text-gray-500 hover:text-gray-700">
+                <h2 class="text-xl font-bold text-gray-800">การตั้งค่าบอท</h2>
+                <button id="closeSettings" class="text-gray-500 hover:text-gray-700">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="p-4 flex-1 overflow-y-auto">
-                <div id="historyList" class="space-y-3">
-                    <!-- ข้อความประวัติจะถูกเพิ่มที่นี่โดย JavaScript -->
-                </div>
-                <div id="emptyHistory" class="text-center py-8 text-gray-500">
-                    <i class="fas fa-comment-slash text-4xl mb-3"></i>
-                    <p>ยังไม่มีประวัติการสนทนา</p>
-                </div>
-            </div>
-            <div class="p-4 border-t border-gray-200 flex justify-between">
-                <button id="exportChat" class="bg-blue-500 text-white rounded-lg px-4 py-2 hover:bg-blue-600 transition-colors flex items-center">
-                    <i class="fas fa-download mr-2"></i>
-                    <span>ส่งออกการสนทนา</span>
-                </button>
-                <button id="clearHistory" class="bg-red-500 text-white rounded-lg px-4 py-2 hover:bg-red-600 transition-colors flex items-center">
-                    <i class="fas fa-trash mr-2"></i>
-                    <span>ลบประวัติ</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Export Modal -->
-    <div id="exportModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-        <div class="bg-white rounded-2xl p-6 w-80 max-w-full mx-4">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">ส่งออกการสนทนา</h2>
-            <div class="space-y-3 mb-4">
-                <p class="text-gray-600">เลือกรูปแบบการส่งออก:</p>
-                <div class="flex space-x-2">
-                    <button id="exportText" class="flex-1 bg-blue-100 text-blue-700 rounded-lg p-3 hover:bg-blue-200 transition-colors">
-                        <i class="fas fa-file-text mb-2"></i>
-                        <p>ข้อความธรรมดา</p>
-                    </button>
-                    <button id="exportJSON" class="flex-1 bg-green-100 text-green-700 rounded-lg p-3 hover:bg-green-200 transition-colors">
-                        <i class="fas fa-code mb-2"></i>
-                        <p>รูปแบบ JSON</p>
-                    </button>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Line Bot API Endpoint</label>
+                        <input type="text" id="botEndpoint" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://your-bot-api.com/webhook">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Channel Access Token</label>
+                        <input type="password" id="channelToken" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ใส่ Channel Access Token">
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="autoRefresh" class="rounded text-blue-500 focus:ring-blue-500">
+                        <label for="autoRefresh" class="ml-2 text-sm text-gray-700">รีเฟรชการสนทนาอัตโนมัติ</label>
+                    </div>
+                    <div>
+                        <button id="testConnection" class="w-full bg-blue-500 text-white rounded-lg py-2 hover:bg-blue-600 transition-colors">
+                            ทดสอบการเชื่อมต่อ
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="flex justify-end space-x-2">
-                <button id="closeExport" class="px-4 py-2 text-gray-600 hover:text-gray-800">
-                    ยกเลิก
+            <div class="p-4 border-t border-gray-200 flex justify-end space-x-2">
+                <button id="saveSettings" class="bg-green-500 text-white rounded-lg px-4 py-2 hover:bg-green-600 transition-colors">
+                    บันทึกการตั้งค่า
                 </button>
             </div>
         </div>
@@ -233,280 +231,350 @@
             console.log('LIFF initialized');
             if (!liff.isLoggedIn()) {
                 liff.login();
+            } else {
+                initializeChat();
             }
         })
         .catch((err) => {
             console.error('LIFF initialization failed', err);
+            showError('ไม่สามารถเชื่อมต่อกับ Line ได้');
         });
 
         // DOM Elements
         const chatContainer = document.getElementById('chatContainer');
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
         const menuBtn = document.getElementById('menuBtn');
         const menuModal = document.getElementById('menuModal');
         const closeMenu = document.getElementById('closeMenu');
-        const historyBtn = document.getElementById('historyBtn');
-        const historyModal = document.getElementById('historyModal');
-        const closeHistory = document.getElementById('closeHistory');
-        const historyList = document.getElementById('historyList');
-        const emptyHistory = document.getElementById('emptyHistory');
-        const exportChat = document.getElementById('exportChat');
-        const clearHistory = document.getElementById('clearHistory');
-        const exportModal = document.getElementById('exportModal');
-        const exportText = document.getElementById('exportText');
-        const exportJSON = document.getElementById('exportJSON');
-        const closeExport = document.getElementById('closeExport');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettings = document.getElementById('closeSettings');
+        const saveSettings = document.getElementById('saveSettings');
+        const testConnection = document.getElementById('testConnection');
+        const connectionBanner = document.getElementById('connectionBanner');
+        const closeBanner = document.getElementById('closeBanner');
+        const loadingIndicator = document.getElementById('loadingIndicator');
         const quickReplies = document.querySelectorAll('.quick-reply');
+        const connectionStatus = document.getElementById('connectionStatus');
 
-        // ตัวแปรเก็บประวัติการสนทนา
-        let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+        // ตัวแปรเก็บการตั้งค่า
+        let botSettings = {
+            endpoint: localStorage.getItem('botEndpoint') || '',
+            channelToken: localStorage.getItem('channelToken') || '',
+            autoRefresh: localStorage.getItem('autoRefresh') === 'true'
+        };
+
+        // ตัวแปรเก็บข้อมูลผู้ใช้
+        let userProfile = null;
 
         // Functions
-        function addMessage(text, isUser = false) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'} fade-in`;
+        function initializeChat() {
+            // โหลดการตั้งค่า
+            loadSettings();
             
-            const bubble = document.createElement('div');
-            bubble.className = `message-bubble p-4 shadow-sm ${isUser ? 'user-message' : 'bot-message'}`;
-            bubble.textContent = text;
+            // ดึงข้อมูลโปรไฟล์ผู้ใช้
+            getUserProfile();
             
-            messageDiv.appendChild(bubble);
-            chatContainer.appendChild(messageDiv);
+            // โหลดประวัติการสนทนา
+            loadChatHistory();
             
-            // บันทึกข้อความลงในประวัติ
-            saveToHistory(text, isUser);
-            
-            // Scroll to bottom
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function saveToHistory(text, isUser) {
-            const message = {
-                text: text,
-                isUser: isUser,
-                timestamp: new Date().toISOString()
-            };
-            
-            chatHistory.push(message);
-            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-            
-            // อัพเดทการแสดงผลประวัติถ้ากำลังเปิดอยู่
-            if (!historyModal.classList.contains('hidden')) {
-                displayHistory();
+            // ตั้งค่า Auto Refresh ถ้าเปิดใช้งาน
+            if (botSettings.autoRefresh) {
+                setInterval(loadChatHistory, 30000); // รีเฟรชทุก 30 วินาที
             }
         }
 
-        function displayHistory() {
-            historyList.innerHTML = '';
+        function loadSettings() {
+            document.getElementById('botEndpoint').value = botSettings.endpoint;
+            document.getElementById('channelToken').value = botSettings.channelToken;
+            document.getElementById('autoRefresh').checked = botSettings.autoRefresh;
+        }
+
+        function saveBotSettings() {
+            botSettings.endpoint = document.getElementById('botEndpoint').value;
+            botSettings.channelToken = document.getElementById('channelToken').value;
+            botSettings.autoRefresh = document.getElementById('autoRefresh').checked;
             
-            if (chatHistory.length === 0) {
-                emptyHistory.classList.remove('hidden');
+            localStorage.setItem('botEndpoint', botSettings.endpoint);
+            localStorage.setItem('channelToken', botSettings.channelToken);
+            localStorage.setItem('autoRefresh', botSettings.autoRefresh);
+            
+            alert('บันทึกการตั้งค่าเรียบร้อยแล้ว');
+            settingsModal.classList.add('hidden');
+        }
+
+        async function testBotConnection() {
+            if (!botSettings.endpoint || !botSettings.channelToken) {
+                alert('กรุณากรอก API Endpoint และ Channel Token');
                 return;
             }
             
-            emptyHistory.classList.add('hidden');
-            
-            // แสดงประวัติการสนทนาล่าสุดขึ้นก่อน
-            const reversedHistory = [...chatHistory].reverse();
-            
-            reversedHistory.forEach((message, index) => {
-                const historyItem = document.createElement('div');
-                historyItem.className = 'chat-history-item bg-gray-50 rounded-lg p-3 border border-gray-200';
-                
-                const messageHeader = document.createElement('div');
-                messageHeader.className = 'flex justify-between items-center mb-2';
-                
-                const sender = document.createElement('span');
-                sender.className = `text-sm font-medium ${message.isUser ? 'text-blue-600' : 'text-purple-600'}`;
-                sender.textContent = message.isUser ? 'คุณ' : 'AI Assistant';
-                
-                const time = document.createElement('span');
-                time.className = 'text-xs text-gray-500';
-                time.textContent = new Date(message.timestamp).toLocaleString('th-TH');
-                
-                messageHeader.appendChild(sender);
-                messageHeader.appendChild(time);
-                
-                const messageText = document.createElement('div');
-                messageText.className = 'text-gray-700';
-                messageText.textContent = message.text;
-                
-                historyItem.appendChild(messageHeader);
-                historyItem.appendChild(messageText);
-                
-                historyList.appendChild(historyItem);
-            });
-        }
-
-        function clearChatHistory() {
-            if (confirm('คุณแน่ใจว่าต้องการลบประวัติการสนทนาทั้งหมด?')) {
-                chatHistory = [];
-                localStorage.removeItem('chatHistory');
-                displayHistory();
-            }
-        }
-
-        function exportChatAsText() {
-            if (chatHistory.length === 0) {
-                alert('ไม่มีประวัติการสนทนาให้ส่งออก');
-                return;
-            }
-            
-            let text = 'ประวัติการสนทนา - AI Assistant\n';
-            text += 'สร้างเมื่อ: ' + new Date().toLocaleString('th-TH') + '\n\n';
-            
-            chatHistory.forEach(message => {
-                const sender = message.isUser ? 'คุณ' : 'AI Assistant';
-                const time = new Date(message.timestamp).toLocaleString('th-TH');
-                text += `[${time}] ${sender}: ${message.text}\n`;
-            });
-            
-            // สร้าง Blob และดาวน์โหลด
-            const blob = new Blob([text], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `chat-history-${new Date().toISOString().split('T')[0]}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            alert('ส่งออกการสนทนาเรียบร้อยแล้ว!');
-        }
-
-        function exportChatAsJSON() {
-            if (chatHistory.length === 0) {
-                alert('ไม่มีประวัติการสนทนาให้ส่งออก');
-                return;
-            }
-            
-            const data = {
-                exportedAt: new Date().toISOString(),
-                messageCount: chatHistory.length,
-                chatHistory: chatHistory
-            };
-            
-            const json = JSON.stringify(data, null, 2);
-            
-            // สร้าง Blob และดาวน์โหลด
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `chat-history-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            alert('ส่งออกการสนทนาในรูปแบบ JSON เรียบร้อยแล้ว!');
-        }
-
-        function showTypingIndicator() {
-            const typingDiv = document.createElement('div');
-            typingDiv.className = 'flex justify-start';
-            typingDiv.id = 'typingIndicator';
-            
-            const bubble = document.createElement('div');
-            bubble.className = 'message-bubble bot-message p-3 shadow-sm flex items-center';
-            
-            const dots = document.createElement('div');
-            dots.className = 'flex';
-            for (let i = 0; i < 3; i++) {
-                const dot = document.createElement('div');
-                dot.className = 'typing-indicator';
-                dots.appendChild(dot);
-            }
-            
-            bubble.appendChild(dots);
-            bubble.appendChild(document.createTextNode(' กำลังพิมพ์...'));
-            typingDiv.appendChild(bubble);
-            chatContainer.appendChild(typingDiv);
-            
-            // Scroll to bottom
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function hideTypingIndicator() {
-            const typingIndicator = document.getElementById('typingIndicator');
-            if (typingIndicator) {
-                typingIndicator.remove();
-            }
-        }
-
-        function simulateAIResponse(userMessage) {
-            // จำลองการตอบกลับของ AI
-            const responses = [
-                "ฉันเข้าใจคำถามของคุณแล้ว! นี่คือคำตอบที่คุณต้องการ",
-                "ขอบคุณสำหรับคำถามที่น่าสนใจ! ตามที่คุณถาม...",
-                "โอ้! นั่นเป็นคำถามที่ดีเลย ฉันคิดว่า...",
-                "ฉันได้วิเคราะห์คำถามของคุณแล้ว และนี่คือสิ่งที่ฉันพบ",
-                "ขออธิบายให้ฟังเกี่ยวกับเรื่องนี้ค่ะ..."
-            ];
-            
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-            
-            // แสดง indicator การพิมพ์
-            showTypingIndicator();
-            
-            // จำลองการตอบกลับหลังจากหน่วงเวลา
-            setTimeout(() => {
-                hideTypingIndicator();
-                addMessage(randomResponse + "\n\nนอกจากนี้ ฉันยังสามารถช่วยคุณในเรื่องอื่นๆ ได้อีกมากมาย ลองสอบถามดูนะ!", false);
-                
-                // เพิ่ม quick replies หลังจากได้รับคำตอบ
-                addQuickReplies();
-            }, 2000);
-        }
-
-        function addQuickReplies() {
-            const quickReplyDiv = document.createElement('div');
-            quickReplyDiv.className = 'flex flex-wrap gap-2 justify-start mt-2';
-            
-            const replies = [
-                "บอกข้อมูลเพิ่มเติม",
-                "มีตัวอย่างอื่นไหม",
-                "ขอความช่วยเหลือเพิ่มเติม",
-                "ขอบคุณ"
-            ];
-            
-            replies.forEach(reply => {
-                const button = document.createElement('button');
-                button.className = 'quick-reply bg-white border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50';
-                button.textContent = reply;
-                button.addEventListener('click', () => {
-                    messageInput.value = reply;
-                    sendMessage();
+            try {
+                const response = await fetch(`${botSettings.endpoint}/test`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${botSettings.channelToken}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
-                quickReplyDiv.appendChild(button);
+                
+                if (response.ok) {
+                    alert('การเชื่อมต่อกับบอทสำเร็จ!');
+                } else {
+                    alert('ไม่สามารถเชื่อมต่อกับบอทได้');
+                }
+            } catch (error) {
+                console.error('Connection test failed:', error);
+                alert('การทดสอบการเชื่อมต่อล้มเหลว: ' + error.message);
+            }
+        }
+
+        function getUserProfile() {
+            liff.getProfile()
+            .then(profile => {
+                userProfile = profile;
+                console.log('User profile loaded:', profile);
+            })
+            .catch((err) => {
+                console.error('Error getting profile:', err);
+            });
+        }
+
+        async function loadChatHistory() {
+            if (!botSettings.endpoint || !botSettings.channelToken) {
+                showError('กรุณาตั้งค่า API Endpoint และ Channel Token ก่อน');
+                return;
+            }
+            
+            try {
+                loadingIndicator.classList.remove('hidden');
+                connectionStatus.textContent = 'กำลังโหลดการสนทนา...';
+                connectionStatus.className = 'text-yellow-500';
+                
+                // ส่ง request ไปยัง Line Bot เพื่อดึงประวัติการสนทนา
+                const response = await fetch(`${botSettings.endpoint}/chat/history`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${botSettings.channelToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: userProfile?.userId,
+                        limit: 50 // จำนวนข้อความที่ต้องการดึง
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                displayChatHistory(data.messages);
+                
+                connectionStatus.textContent = 'เชื่อมต่อกับบอทแล้ว';
+                connectionStatus.className = 'text-green-500';
+                
+            } catch (error) {
+                console.error('Failed to load chat history:', error);
+                showError('ไม่สามารถโหลดประวัติการสนทนาได้: ' + error.message);
+                
+                connectionStatus.textContent = 'การเชื่อมต่อมีปัญหา';
+                connectionStatus.className = 'text-red-500';
+                
+                // แสดงข้อมูลตัวอย่างหากไม่สามารถเชื่อมต่อได้
+                displaySampleChatHistory();
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        function displayChatHistory(messages) {
+            chatContainer.innerHTML = '';
+            
+            if (!messages || messages.length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.className = 'text-center py-8 text-gray-500';
+                emptyMessage.innerHTML = `
+                    <i class="fas fa-comments text-4xl mb-3"></i>
+                    <p>ยังไม่มีการสนทนา</p>
+                    <p class="text-sm mt-2">เริ่มการสนทนาโดยการส่งข้อความแรก</p>
+                `;
+                chatContainer.appendChild(emptyMessage);
+                return;
+            }
+            
+            // เรียงข้อความตามเวลา (จากเก่าสุดไปล่าสุด)
+            messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            
+            messages.forEach(message => {
+                addMessageToChat(message.text, message.sender, new Date(message.timestamp));
             });
             
-            chatContainer.appendChild(quickReplyDiv);
+            // Scroll ไปที่ล่างสุด
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        function sendMessage() {
-            const message = messageInput.value.trim();
-            if (message) {
-                // เพิ่มข้อความของผู้ใช้
-                addMessage(message, true);
-                messageInput.value = '';
-                
-                // จำลองการตอบกลับของ AI
-                simulateAIResponse(message);
+        function displaySampleChatHistory() {
+            const sampleMessages = [
+                {
+                    text: "สวัสดีค่ะ! มีอะไรให้ช่วยเหลือไหมคะ?",
+                    sender: "bot",
+                    timestamp: new Date(Date.now() - 300000).toISOString()
+                },
+                {
+                    text: "สอบถามราคาสินค้าครับ",
+                    sender: "user", 
+                    timestamp: new Date(Date.now() - 240000).toISOString()
+                },
+                {
+                    text: "ขอทราบรายละเอียดสินค้าที่สนใจด้วยค่ะ",
+                    sender: "bot",
+                    timestamp: new Date(Date.now() - 180000).toISOString()
+                }
+            ];
+            
+            displayChatHistory(sampleMessages);
+            
+            const warningMessage = document.createElement('div');
+            warningMessage.className = 'bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-yellow-800 text-sm mt-4';
+            warningMessage.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span>กำลังแสดงข้อมูลตัวอย่าง เนื่องจากไม่สามารถเชื่อมต่อกับบอทได้</span>
+                </div>
+            `;
+            chatContainer.appendChild(warningMessage);
+        }
+
+        function addMessageToChat(text, sender, timestamp) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} fade-in`;
+            
+            const bubble = document.createElement('div');
+            let bubbleClass = 'message-bubble p-4 shadow-sm ';
+            
+            if (sender === 'user') {
+                bubbleClass += 'user-message';
+            } else if (sender === 'agent') {
+                bubbleClass += 'agent-message';
+            } else {
+                bubbleClass += 'bot-message';
             }
+            
+            bubble.className = bubbleClass;
+            
+            const messageText = document.createElement('div');
+            messageText.textContent = text;
+            
+            const timeText = document.createElement('div');
+            timeText.className = 'text-xs mt-1 opacity-70';
+            timeText.textContent = formatTime(timestamp);
+            
+            bubble.appendChild(messageText);
+            bubble.appendChild(timeText);
+            messageDiv.appendChild(bubble);
+            
+            chatContainer.appendChild(messageDiv);
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString('th-TH', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+
+        async function sendMessageToBot(messageText) {
+            if (!botSettings.endpoint || !botSettings.channelToken) {
+                showError('กรุณาตั้งค่า API Endpoint และ Channel Token ก่อน');
+                return;
+            }
+            
+            try {
+                // แสดงข้อความของผู้ใช้ในแชททันที
+                addMessageToChat(messageText, 'user', new Date());
+                
+                // ส่งข้อความไปยัง Line Bot
+                const response = await fetch(`${botSettings.endpoint}/message`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${botSettings.channelToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: userProfile?.userId,
+                        message: messageText,
+                        replyToken: generateReplyToken()
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // แสดงข้อความตอบกลับจากบอท
+                if (data.reply) {
+                    addMessageToChat(data.reply, 'bot', new Date());
+                }
+                
+            } catch (error) {
+                console.error('Failed to send message:', error);
+                showError('ไม่สามารถส่งข้อความได้: ' + error.message);
+                
+                // แสดงข้อความตอบกลับตัวอย่าง
+                setTimeout(() => {
+                    const sampleReplies = [
+                        "ขอบคุณสำหรับข้อความค่ะ ฉันจะตอบกลับคุณเร็วๆ นี้",
+                        "ได้รับข้อความของคุณแล้ว ขอเวลาตรวจสอบข้อมูลหน่อยนะคะ",
+                        "ขออภัยในความไม่สะดวก ขณะนี้มีข้อขัดข้องทางเทคนิค"
+                    ];
+                    const randomReply = sampleReplies[Math.floor(Math.random() * sampleReplies.length)];
+                    addMessageToChat(randomReply, 'bot', new Date());
+                }, 1000);
+            }
+        }
+
+        function generateReplyToken() {
+            return 'token_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'bg-red-50 border border-red-200 rounded-lg p-3 text-red-800 text-sm mb-4';
+            errorDiv.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            chatContainer.appendChild(errorDiv);
         }
 
         // Event Listeners
-        sendBtn.addEventListener('click', sendMessage);
+        sendBtn.addEventListener('click', () => {
+            const message = messageInput.value.trim();
+            if (message) {
+                sendMessageToBot(message);
+                messageInput.value = '';
+            }
+        });
         
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                sendMessage();
+                const message = messageInput.value.trim();
+                if (message) {
+                    sendMessageToBot(message);
+                    messageInput.value = '';
+                }
             }
         });
+
+        refreshBtn.addEventListener('click', loadChatHistory);
 
         menuBtn.addEventListener('click', () => {
             menuModal.classList.remove('hidden');
@@ -516,64 +584,33 @@
             menuModal.classList.add('hidden');
         });
 
-        historyBtn.addEventListener('click', () => {
+        settingsBtn.addEventListener('click', () => {
             menuModal.classList.add('hidden');
-            historyModal.classList.remove('hidden');
-            displayHistory();
+            settingsModal.classList.remove('hidden');
         });
 
-        closeHistory.addEventListener('click', () => {
-            historyModal.classList.add('hidden');
+        closeSettings.addEventListener('click', () => {
+            settingsModal.classList.add('hidden');
         });
 
-        exportChat.addEventListener('click', () => {
-            historyModal.classList.add('hidden');
-            exportModal.classList.remove('hidden');
-        });
+        saveSettings.addEventListener('click', saveBotSettings);
 
-        closeExport.addEventListener('click', () => {
-            exportModal.classList.add('hidden');
-        });
+        testConnection.addEventListener('click', testBotConnection);
 
-        exportText.addEventListener('click', () => {
-            exportChatAsText();
-            exportModal.classList.add('hidden');
+        closeBanner.addEventListener('click', () => {
+            connectionBanner.classList.add('hidden');
         });
-
-        exportJSON.addEventListener('click', () => {
-            exportChatAsJSON();
-            exportModal.classList.add('hidden');
-        });
-
-        clearHistory.addEventListener('click', clearChatHistory);
 
         // เพิ่ม event listener ให้กับ quick replies
         quickReplies.forEach(button => {
             button.addEventListener('click', () => {
-                messageInput.value = button.textContent;
-                sendMessage();
+                const message = button.textContent;
+                sendMessageToBot(message);
             });
         });
 
-        // ตัวอย่างการใช้งาน LIFF
-        function getUserProfile() {
-            liff.getProfile()
-            .then(profile => {
-                console.log('User profile:', profile);
-                // สามารถใช้ข้อมูลโปรไฟล์เพื่อ personalize การสนทนาได้
-            })
-            .catch((err) => {
-                console.error('Error getting profile:', err);
-            });
-        }
-
-        // เรียกใช้เมื่อ LIFF พร้อม
-        liff.ready.then(() => {
-            getUserProfile();
-        });
-
-        // โหลดประวัติการสนทนาเมื่อเริ่มต้น
-        displayHistory();
+        // โหลดการสนทนาเมื่อหน้าเว็บโหลดเสร็จ
+        document.addEventListener('DOMContentLoaded', initializeChat);
     </script>
 </body>
 </html>
