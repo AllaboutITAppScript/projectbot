@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot - Line LIFF</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .message-bubble {
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #3b82f6;
+            color: white;
+            border-radius: 18px 18px 4px 18px;
+        }
+        .bot-message {
+            background-color: #f1f5f9;
+            color: #334155;
+            border-radius: 18px 18px 18px 4px;
+        }
+        .typing-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #94a3b8;
+            margin: 0 2px;
+            animation: bounce 1.3s infinite ease-in-out;
+        }
+        .typing-indicator:nth-child(2) {
+            animation-delay: 0.15s;
+        }
+        .typing-indicator:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+        @keyframes bounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+        .quick-reply {
+            transition: all 0.2s ease;
+        }
+        .quick-reply:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto max-w-md h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-white shadow-sm py-4 px-6 flex items-center justify-between rounded-b-2xl">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                    AI
+                </div>
+                <div class="ml-3">
+                    <h1 class="font-bold text-gray-800">AI Assistant</h1>
+                    <p class="text-xs text-green-500 flex items-center">
+                        <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                        พร้อมให้บริการ
+                    </p>
+                </div>
+            </div>
+            <button id="menuBtn" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+        </header>
+
+        <!-- Chat Container -->
+        <div id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
+            <!-- Welcome Message -->
+            <div class="flex justify-start">
+                <div class="message-bubble bot-message p-4 shadow-sm">
+                    <p class="font-medium">สวัสดีค่ะ! ฉันคือผู้ช่วย AI</p>
+                    <p class="mt-2">ฉันสามารถช่วยเหลือคุณในเรื่องต่างๆ เช่น:</p>
+                    <ul class="mt-2 ml-4 list-disc text-sm space-y-1">
+                        <li>ตอบคำถามทั่วไป</li>
+                        <li>ช่วยค้นหาข้อมูล</li>
+                        <li>ให้คำแนะนำต่างๆ</li>
+                        <li>และอื่นๆ อีกมากมาย!</li>
+                    </ul>
+                    <p class="mt-3 text-sm">ลองพิมพ์คำถามหรือเลือกคำถามด้านล่างดูสิ</p>
+                </div>
+            </div>
+
+            <!-- Quick Reply Buttons -->
+            <div class="flex flex-wrap gap-2 justify-start">
+                <button class="quick-reply bg-white border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    แนะนำตัวหน่อย
+                </button>
+                <button class="quick-reply bg-white border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    วันนี้อากาศเป็นอย่างไร
+                </button>
+                <button class="quick-reply bg-white border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    มีเมนูอาหารแนะนำไหม
+                </button>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="bg-white p-4 border-t border-gray-200">
+            <div class="flex items-center">
+                <button class="text-gray-500 hover:text-gray-700 p-2">
+                    <i class="fas fa-plus-circle"></i>
+                </button>
+                <div class="flex-1 mx-2">
+                    <input 
+                        id="messageInput" 
+                        type="text" 
+                        placeholder="พิมพ์ข้อความที่นี่..." 
+                        class="w-full bg-gray-100 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                </div>
+                <button id="sendBtn" class="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-600 transition-colors">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+            <p class="text-xs text-center text-gray-500 mt-2">
+                กด Enter เพื่อส่งข้อความ
+            </p>
+        </div>
+    </div>
+
+    <!-- Menu Modal -->
+    <div id="menuModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-2xl p-6 w-80 max-w-full mx-4">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">เมนู</h2>
+            <div class="space-y-3">
+                <button class="w-full text-left p-3 rounded-lg hover:bg-gray-100 flex items-center">
+                    <i class="fas fa-history text-gray-500 mr-3"></i>
+                    <span>ประวัติการสนทนา</span>
+                </button>
+                <button class="w-full text-left p-3 rounded-lg hover:bg-gray-100 flex items-center">
+                    <i class="fas fa-cog text-gray-500 mr-3"></i>
+                    <span>การตั้งค่า</span>
+                </button>
+                <button class="w-full text-left p-3 rounded-lg hover:bg-gray-100 flex items-center">
+                    <i class="fas fa-info-circle text-gray-500 mr-3"></i>
+                    <span>เกี่ยวกับ</span>
+                </button>
+                <button id="closeMenu" class="w-full text-left p-3 rounded-lg hover:bg-gray-100 flex items-center text-red-500">
+                    <i class="fas fa-times mr-3"></i>
+                    <span>ปิด</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // LIFF Initialization
+        liff.init({
+            liffId: 'YOUR_LIFF_ID' // ใส่ LIFF ID ของคุณที่นี่
+        })
+        .then(() => {
+            console.log('LIFF initialized');
+            if (!liff.isLoggedIn()) {
+                liff.login();
+            }
+        })
+        .catch((err) => {
+            console.error('LIFF initialization failed', err);
+        });
+
+        // DOM Elements
+        const chatContainer = document.getElementById('chatContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const menuModal = document.getElementById('menuModal');
+        const closeMenu = document.getElementById('closeMenu');
+        const quickReplies = document.querySelectorAll('.quick-reply');
+
+        // Functions
+        function addMessage(text, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = `message-bubble p-4 shadow-sm ${isUser ? 'user-message' : 'bot-message'}`;
+            bubble.textContent = text;
+            
+            messageDiv.appendChild(bubble);
+            chatContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'flex justify-start';
+            typingDiv.id = 'typingIndicator';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble bot-message p-3 shadow-sm flex items-center';
+            
+            const dots = document.createElement('div');
+            dots.className = 'flex';
+            for (let i = 0; i < 3; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'typing-indicator';
+                dots.appendChild(dot);
+            }
+            
+            bubble.appendChild(dots);
+            bubble.appendChild(document.createTextNode(' กำลังพิมพ์...'));
+            typingDiv.appendChild(bubble);
+            chatContainer.appendChild(typingDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        function simulateAIResponse(userMessage) {
+            // จำลองการตอบกลับของ AI
+            const responses = [
+                "ฉันเข้าใจคำถามของคุณแล้ว! นี่คือคำตอบที่คุณต้องการ",
+                "ขอบคุณสำหรับคำถามที่น่าสนใจ! ตามที่คุณถาม...",
+                "โอ้! นั่นเป็นคำถามที่ดีเลย ฉันคิดว่า...",
+                "ฉันได้วิเคราะห์คำถามของคุณแล้ว และนี่คือสิ่งที่ฉันพบ",
+                "ขออธิบายให้ฟังเกี่ยวกับเรื่องนี้ค่ะ..."
+            ];
+            
+            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+            
+            // แสดง indicator การพิมพ์
+            showTypingIndicator();
+            
+            // จำลองการตอบกลับหลังจากหน่วงเวลา
+            setTimeout(() => {
+                hideTypingIndicator();
+                addMessage(randomResponse + "\n\nนอกจากนี้ ฉันยังสามารถช่วยคุณในเรื่องอื่นๆ ได้อีกมากมาย ลองสอบถามดูนะ!", false);
+                
+                // เพิ่ม quick replies หลังจากได้รับคำตอบ
+                addQuickReplies();
+            }, 2000);
+        }
+
+        function addQuickReplies() {
+            const quickReplyDiv = document.createElement('div');
+            quickReplyDiv.className = 'flex flex-wrap gap-2 justify-start mt-2';
+            
+            const replies = [
+                "บอกข้อมูลเพิ่มเติม",
+                "มีตัวอย่างอื่นไหม",
+                "ขอความช่วยเหลือเพิ่มเติม",
+                "ขอบคุณ"
+            ];
+            
+            replies.forEach(reply => {
+                const button = document.createElement('button');
+                button.className = 'quick-reply bg-white border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50';
+                button.textContent = reply;
+                button.addEventListener('click', () => {
+                    messageInput.value = reply;
+                    sendMessage();
+                });
+                quickReplyDiv.appendChild(button);
+            });
+            
+            chatContainer.appendChild(quickReplyDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message) {
+                // เพิ่มข้อความของผู้ใช้
+                addMessage(message, true);
+                messageInput.value = '';
+                
+                // จำลองการตอบกลับของ AI
+                simulateAIResponse(message);
+            }
+        }
+
+        // Event Listeners
+        sendBtn.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        menuBtn.addEventListener('click', () => {
+            menuModal.classList.remove('hidden');
+        });
+
+        closeMenu.addEventListener('click', () => {
+            menuModal.classList.add('hidden');
+        });
+
+        // เพิ่ม event listener ให้กับ quick replies
+        quickReplies.forEach(button => {
+            button.addEventListener('click', () => {
+                messageInput.value = button.textContent;
+                sendMessage();
+            });
+        });
+
+        // ตัวอย่างการใช้งาน LIFF
+        function getUserProfile() {
+            liff.getProfile()
+            .then(profile => {
+                console.log('User profile:', profile);
+                // สามารถใช้ข้อมูลโปรไฟล์เพื่อ personalize การสนทนาได้
+            })
+            .catch((err) => {
+                console.error('Error getting profile:', err);
+            });
+        }
+
+        // เรียกใช้เมื่อ LIFF พร้อม
+        liff.ready.then(() => {
+            getUserProfile();
+        });
+    </script>
+</body>
+</html>
